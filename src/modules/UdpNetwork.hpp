@@ -1,3 +1,6 @@
+#ifndef NETWORKINTERFACE_HPP
+#define NETWORKINTERFACE_HPP
+
 #define __STDC_CONSTANT_MACROS
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -21,6 +24,7 @@ namespace bsirang
         virtual void sendData(std::vector<uint8_t> &data) = 0;
         virtual std::vector<uint8_t> waitForData() = 0;
     };
+
     class UdpNetwork : public NetworkInterface, public EncodedStreamReceiver
     {
         public:
@@ -37,3 +41,5 @@ namespace bsirang
         std::vector<uint8_t> mBuf;
     };
 }
+
+#endif //NETWORKINTERFACE_HPP

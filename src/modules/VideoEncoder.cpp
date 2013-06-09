@@ -4,37 +4,67 @@
 
 using namespace bsirang;
 
-EncodedFrame::EncodedFrame(unsigned char *data, size_t size)
+EncodedFrame::EncodedFrame(uint8_t *data, size_t size, uint8_t *extraData, size_t extraDataSize)
 {
-    mData = (unsigned char *)malloc(size);
-    if(mData)
+    mData = (uint8_t *)malloc(size);
+    assert(mData);
+    mSize = size;
+    memcpy(mData, data, size);
+
+    if(extraData && extraDataSize)
     {
-        mSize = size;
-    }else
-    {
-        mSize = 0;
+        mExtraData = (uint8_t *)malloc(extraDataSize);
+        assert(mExtraData);
+        mExtraDataSize = extraDataSize;
+        memcpy(mExtraData, extraData, extraDataSize);
     }
+    std::cout << "Created EncodedFrame with size = " << size << " and extraDataSize = " << extraDataSize << std::endl;
 }
 
 EncodedFrame::~EncodedFrame()
 {
     if(mData)
-    {
         free(mData);
-    }
+
+    if(mExtraData)
+        free(mExtraData);
 }
+
+/*
+void EncodedFrame::printExtraData()
+{
+    for(int i = 0; i < mExtraDataSize; i++)
+    {
+        if(i % 16 == 0) std::cout << std::endl;
+        std::cout << std::hex << (int)mExtraData[i] << " ";
+    }
+    std::cout << std::endl;
+}
+*/
 
 std::vector<uint8_t> EncodedFrame::serialize()
 {
     std::vector<uint8_t> result;
+
     uint8_t *mSizeBytes = (uint8_t *)&mSize;
-    for(int i = 0; i < sizeof(mSize); i++)
+    for(unsigned int i = 0; i < sizeof(mSize); i++)
     {
         result.push_back(mSizeBytes[i]);
     }
-    for(int i = 0; i < mSize; i++)
+
+    for(unsigned int i = 0; i < mSize; i++)
     {
         result.push_back(mData[i]);
+    }
+
+    uint8_t *mExtraDataSizeBytes = (uint8_t *)&mExtraDataSize;
+    for(unsigned int i = 0; i < sizeof(mExtraDataSize); i++)
+    {
+        result.push_back(mExtraDataSizeBytes[i]);
+    }
+    for(unsigned int i = 0; i < mExtraDataSize; i++)
+    {
+        result.push_back(mExtraData[i]);
     }
 
     return result;
@@ -42,8 +72,19 @@ std::vector<uint8_t> EncodedFrame::serialize()
 
 EncodedFrame EncodedFrame::deserialize(std::vector<uint8_t> serializedData)
 {
-    size_t size = *(size_t *)&serializedData[0];
-    return EncodedFrame(&serializedData[sizeof(size)], size);
+    size_t offset = 0;
+    size_t size = *(size_t *)&serializedData[offset];
+
+    offset += sizeof(size);
+    uint8_t *data = &serializedData[offset];
+
+    offset += size;
+    size_t extraDataSize = *(size_t *)&serializedData[offset];
+    
+    offset += sizeof(extraDataSize);
+    uint8_t *extraData = &serializedData[offset];
+
+    return EncodedFrame(data, size, extraData, extraDataSize);
 }
 
 
@@ -56,20 +97,24 @@ void VideoEncoder::didReceiveFrame(CameraFrame &frame)
 {
     assert(mEncoderInitialized); //must be initialized before any frames received
     assert(frame.mSize == 640*480*2);
-    memcpy(mFrame->data[0], frame.mData, 640*480); //TODO copy UV planes
+    memcpy(mFrame->data[0], frame.mData, 640*480); //TODO copy UV planes too
+    memset(mFrame->data[1], 127, 640*480 / 4); 
+    memset(mFrame->data[2], 127, 640*480 / 4); 
     AVPacket packet;
     av_init_packet(&packet);
 
     packet.dts = AV_NOPTS_VALUE;
     packet.pts = AV_NOPTS_VALUE;
+    packet.data = NULL;
+    packet.size = 0;
     int got_packet = 0;
-    std::cout << "Encoding frame with width = " << mFrame->width << " height = " << mFrame->height << " pts = " << packet.pts << std::endl;
+    //std::cout << "Encoding frame with width = " << mFrame->width << " height = " << mFrame->height << " pts = " << packet.pts << std::endl;
     int r = avcodec_encode_video2(mCtx, &packet, mFrame, &got_packet);
     std::cout << "avcodec_encode_video() = " << r << " got_packet = " << got_packet << std::endl;
     if(got_packet)
     {
         std::cout << "Got packet of size = " << packet.size << std::endl;
-        mEsr->didReceiveFrame(EncodedFrame(packet.data, packet.size));
+        mEsr->didReceiveFrame(EncodedFrame(packet.data, packet.size, mCtx->extradata, mCtx->extradata_size));
     }
 }
 
@@ -95,8 +140,9 @@ bool VideoEncoder::initEncoder()
     mCtx->gop_size = 10;
     mCtx->max_b_frames = 1;
     mCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-    av_opt_set(mCtx->priv_data, "preset", "slow", 0);
-    //mCtx->profile = FF_PROFILE_H264_BASELINE;
+    mCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    mCtx->profile = FF_PROFILE_H264_BASELINE;
+    //av_opt_set(mCtx->priv_data, "preset", "slow", 0);
     //mCtx->bit_rate_tolerance = 0;
     //mCtx->rc_max_rate = 0;
     //mCtx->rc_buffer_size = 0;
@@ -121,6 +167,9 @@ bool VideoEncoder::initEncoder()
     {
         std::cout << "Could not open codec" << std::endl;
         return false;
+    }else
+    {
+        std::cout << "Codec opened with extra data size = " << mCtx->extradata_size << std::endl;
     }
 
     size_t numPixels = mCtx->width * mCtx->height;

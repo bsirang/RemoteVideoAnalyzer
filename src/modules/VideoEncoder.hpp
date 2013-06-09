@@ -13,14 +13,20 @@ extern "C"
 
 namespace bsirang
 {
+    //NOTE: This struct should be passed by reference to avoid deep copying of the object because it will result in
+    //double freeing in the deconstructor. Eventually smart pointers should be used.
     struct EncodedFrame
     {
-        EncodedFrame(unsigned char *data, size_t size);
+        EncodedFrame(uint8_t *data, size_t size, uint8_t *extraData, size_t extraDataSize);
         ~EncodedFrame();
-        unsigned char *mData;
-        size_t mSize;
+        void printExtraData();
         std::vector<uint8_t> serialize();
         static EncodedFrame deserialize(std::vector<uint8_t> serializedData);
+
+        uint8_t *mData;
+        size_t mSize;
+        uint8_t *mExtraData;
+        size_t mExtraDataSize;
 
     };
     class EncodedStreamReceiver
