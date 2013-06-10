@@ -250,7 +250,7 @@ void CameraInterface::readFrame()
     assert(buf.index < mBuffers.size());
 
     //std::cout << "New frame read and stored in buffer #" << buf.index << std::endl;
-    CameraFrame frame = CameraFrame((uint8_t *)mBuffers[buf.index].start, buf.bytesused, mPixelFormat);
+    CameraFrame frame((uint8_t *)mBuffers[buf.index].start, buf.bytesused, mPixelFormat);
 
     static uint32_t count = 0;
     if(count++ % 10 == 0) //TODO implement cleaner solution (this is quick hack to reduce FPS)
