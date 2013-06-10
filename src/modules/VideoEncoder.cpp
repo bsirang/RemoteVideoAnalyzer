@@ -128,7 +128,9 @@ void VideoEncoder::didReceiveFrame(CameraFrame &frame)
     if(got_packet)
     {
         std::cout << "Got packet of size = " << packet.size << std::endl;
+
         mEsr->didReceiveFrame(EncodedFrame(packet.data, packet.size, mCtx->extradata, mCtx->extradata_size));
+        av_free_packet(&packet);
     }
 }
 
