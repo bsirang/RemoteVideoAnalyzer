@@ -14,8 +14,9 @@ FFMpeg (libav) was built using the following configure parameters:
 
 
 Things to Improve:
-1) Remove hardcoded values in favor of general impementations.
-2) Convert synchronous pipeline to asynchronous.
-3) Tuning of video codec parameters.
-4) Support for sending fragments of large packets.
-5) Implementing proper Makefile or equivalent
+
+1. Remove hardcoded values in favor of general impementations.
+2. Convert synchronous pipeline to asynchronous.
+3. Tuning of video codec parameters.
+4. Support for sending fragments of large packets.
+5. Implementing proper Makefile or equivalent
