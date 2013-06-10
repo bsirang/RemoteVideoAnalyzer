@@ -27,7 +27,7 @@ namespace bsirang
         ~EncodedFrame();
         void printExtraData();
         std::vector<uint8_t> serialize();
-        static EncodedFrame deserialize(std::vector<uint8_t> serializedData);
+        static EncodedFrame deserialize(std::vector<uint8_t> &serializedData);
 
         uint8_t *mData;
         size_t mSize;

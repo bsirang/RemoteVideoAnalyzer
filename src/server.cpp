@@ -21,10 +21,10 @@ int main(int argc, char *argv[])
     while(1)
     {
         std::vector<uint8_t> data = udp.waitForData();
+        if(!data.size()) continue;
         bsirang::EncodedFrame encFrame = bsirang::EncodedFrame::deserialize(data);
         std::cout << "Received encoded frame of size " << encFrame.mSize << std::endl;
         dec.decodeFrame(encFrame);
-        //std::cout << "Received " << data.size() << " bytes of data" << std::endl;
     }
 
     return 0;

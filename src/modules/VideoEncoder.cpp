@@ -25,23 +25,19 @@ EncodedFrame::EncodedFrame(uint8_t *data, size_t size, uint8_t *extraData, size_
 EncodedFrame::~EncodedFrame()
 {
     if(mData)
+    {
         free(mData);
+        mData = NULL;
+        mSize = 0;
+    }
 
     if(mExtraData)
-        free(mExtraData);
-}
-
-/*
-void EncodedFrame::printExtraData()
-{
-    for(int i = 0; i < mExtraDataSize; i++)
     {
-        if(i % 16 == 0) std::cout << std::endl;
-        std::cout << std::hex << (int)mExtraData[i] << " ";
+        free(mExtraData);
+        mExtraData = NULL;
+        mExtraDataSize = 0;
     }
-    std::cout << std::endl;
 }
-*/
 
 std::vector<uint8_t> EncodedFrame::serialize()
 {
@@ -71,7 +67,7 @@ std::vector<uint8_t> EncodedFrame::serialize()
     return result;
 }
 
-EncodedFrame EncodedFrame::deserialize(std::vector<uint8_t> serializedData)
+EncodedFrame EncodedFrame::deserialize(std::vector<uint8_t> &serializedData)
 {
     size_t offset = 0;
     size_t size = *(size_t *)&serializedData[offset];
