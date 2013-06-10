@@ -15,11 +15,11 @@ void VideoDecoder::decodeFrame(EncodedFrame &frame)
     AVPacket packet;
     av_init_packet(&packet);
     std::vector<uint8_t> fullData;
-    for(int i = 0; i < frame.mExtraDataSize; i++)
+    for(unsigned int i = 0; i < frame.mExtraDataSize; i++)
     {
         fullData.push_back(frame.mExtraData[i]);
     }
-    for(int i = 0; i < frame.mSize; i++)
+    for(unsigned int i = 0; i < frame.mSize; i++)
     {
         fullData.push_back(frame.mData[i]);
     }

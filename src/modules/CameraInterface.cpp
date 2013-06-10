@@ -44,7 +44,7 @@ void CameraFrame::YUYVTo422P(uint8_t *planar, uint8_t *yuyv, size_t size)
     uint8_t *u = (planar + uOffset);
     uint8_t *v = (planar + vOffset);
     int count = 0;
-    for(int i = 0; i < size / 4; i++)
+    for(unsigned int i = 0; i < size / 4; i++)
     {
         y[count] =   yuyv[i*4+0];
         u[count/2] = yuyv[i*4+1];
@@ -135,12 +135,9 @@ int CameraInterface::openDevice(std::string &devName)
 
 bool CameraInterface::initDevice()
 {
-    struct v4l2_capability cap = { 0 };
-    struct v4l2_cropcap cropcap = {0};
-    struct v4l2_crop crop = {0};
+    struct v4l2_capability cap = {0};
     struct v4l2_format fmt = {0};
     struct v4l2_requestbuffers req = {0};
-    unsigned int min = 0;
 
     if(xioctl(VIDIOC_QUERYCAP, &cap) == -1)
     {

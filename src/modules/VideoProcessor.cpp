@@ -32,7 +32,7 @@ void VideoProcessor::didReceiveFrame(AVFrame *frame)
     IplImage *image = AVFrameToIplImage(frame);
     //cvShowImage(mWindowName.c_str(), image);
     detectAndDisplay(image);
-    int c = cvWaitKey(30);
+    cvWaitKey(30);
     cvReleaseImage(&image);
 }
 
@@ -47,7 +47,7 @@ void VideoProcessor::detectAndDisplay(cv::Mat frame)
     //-- Detect faces
     mFaceCascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
 
-    for( int i = 0; i < faces.size(); i++ )
+    for(unsigned int i = 0; i < faces.size(); i++ )
     {
         cv::Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
         ellipse( frame, center, cv::Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, cv::Scalar( 255, 0, 255 ), 4, 8, 0 );

@@ -115,17 +115,6 @@ void VideoEncoder::didReceiveFrame(CameraFrame &frame)
     //memset(mFrame->data[1], 127, numPixels / 2);
     //memset(mFrame->data[2], 127, numPixels / 2); 
 
-    /*
-    int uvWidth = 640 / 2;
-    for(int i = 0; i < 480; i++)
-    {
-        for(int j = 0; j < uvWidth; j++)
-        {
-            mFrame->data[1][(i/2)*uvWidth + j] = u[i*uvWidth + j];
-            mFrame->data[2][(i/2)*uvWidth + j] = v[i*uvWidth + j];
-        }
-    }
-    */
     AVPacket packet;
     av_init_packet(&packet);
 
@@ -134,7 +123,6 @@ void VideoEncoder::didReceiveFrame(CameraFrame &frame)
     packet.data = NULL;
     packet.size = 0;
     int got_packet = 0;
-    //std::cout << "Encoding frame with width = " << mFrame->width << " height = " << mFrame->height << " pts = " << packet.pts << std::endl;
     int r = avcodec_encode_video2(mCtx, &packet, mFrame, &got_packet);
     std::cout << "avcodec_encode_video() = " << r << " got_packet = " << got_packet << std::endl;
     if(got_packet)
@@ -178,9 +166,6 @@ bool VideoEncoder::initEncoder()
         std::cout << "Codec opened with extra data size = " << mCtx->extradata_size << std::endl;
     }
 
-    size_t numPixels = mCtx->width * mCtx->height;
-    //mPictureBuf = (uint8_t *)malloc(numPixels * 3 / 2);
-
     mFrame = avcodec_alloc_frame();
     int ret = av_image_alloc(mFrame->data, mFrame->linesize, mCtx->width, mCtx->height,
                              mCtx->pix_fmt, 32);
@@ -189,14 +174,7 @@ bool VideoEncoder::initEncoder()
     {
         std::cout << "av_image_alloc returned " << ret << std::endl;
     }
-    /*
-    mFrame->data[0] = mPictureBuf; //Y data at start of buffer (one sample per pixel)
-    mFrame->data[1] = mPictureBuf + numPixels;
-    mFrame->data[2] = mPictureBuf + numPixels + numPixels / 4;
-    mFrame->linesize[0] = mCtx->width;
-    mFrame->linesize[1] = mCtx->width / 2;
-    mFrame->linesize[2] = mCtx->width / 2;
-    */
+
     mFrame->format = mCtx->pix_fmt;
     mFrame->width = mCtx->width;
     mFrame->height = mCtx->height;
