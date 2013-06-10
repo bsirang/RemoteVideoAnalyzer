@@ -80,13 +80,12 @@ std::vector<uint8_t> UdpNetwork::waitForData()
 {
     uint8_t *buf = &mBuf[0];
     int addrlen = sizeof(mClientAddr);
-    ssize_t numReceived = recvfrom(mSock, buf, MAX_BUF, 0,(struct sockaddr*)&mClientAddr, (socklen_t *)&addrlen);
+    ssize_t numReceived = recvfrom(mSock, buf, mBuf.size(), 0,(struct sockaddr*)&mClientAddr, (socklen_t *)&addrlen);
     if(numReceived != -1)
     {
         std::cout << "Received " << numReceived << " bytes." << std::endl;
         if(numReceived)
         {
-            assert(numReceived <= MAX_BUF);
             return std::vector<uint8_t>(buf, buf+numReceived);
         }
     }else
