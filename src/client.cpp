@@ -1,3 +1,8 @@
+/**
+ * Entry point for the client application. The client application
+ * retrieves raw camera images, encodes them, and sends them out over UDP.
+ */
+
 #define __STDC_CONSTANT_MACROS
 #include "modules/CameraInterface.hpp"
 #include "modules/VideoEncoder.hpp"

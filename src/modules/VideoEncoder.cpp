@@ -13,6 +13,7 @@ EncodedFrame::EncodedFrame(uint8_t *data, size_t size, uint8_t *extraData, size_
 
     if(extraData && extraDataSize)
     {
+        std::cout << "Attempting to allocate " << extraDataSize << " bytes for extraData" << std::endl;
         mExtraData = (uint8_t *)malloc(extraDataSize);
         assert(mExtraData);
         mExtraDataSize = extraDataSize;
@@ -84,6 +85,8 @@ EncodedFrame EncodedFrame::deserialize(std::vector<uint8_t> serializedData)
     offset += sizeof(extraDataSize);
     uint8_t *extraData = &serializedData[offset];
 
+    std::cout << "Deserialized EncodedFrame with size = " << size << " and extraDataSize = " << extraDataSize << std::endl;
+
     return EncodedFrame(data, size, extraData, extraDataSize);
 }
 
@@ -97,9 +100,32 @@ void VideoEncoder::didReceiveFrame(CameraFrame &frame)
 {
     assert(mEncoderInitialized); //must be initialized before any frames received
     assert(frame.mSize == 640*480*2);
-    memcpy(mFrame->data[0], frame.mData, 640*480); //TODO copy UV planes too
-    memset(mFrame->data[1], 127, 640*480 / 4); 
-    memset(mFrame->data[2], 127, 640*480 / 4); 
+    size_t numPixels = 640*480;
+    size_t yOffset = 0;
+    size_t uOffset = numPixels;
+    size_t vOffset = uOffset + (numPixels / 2);
+
+    uint8_t *y = (frame.mData + yOffset);
+    uint8_t *u = (frame.mData + uOffset);
+    uint8_t *v = (frame.mData + vOffset);
+
+    memcpy(mFrame->data[0], y, numPixels);
+    memcpy(mFrame->data[1], u, numPixels/2);
+    memcpy(mFrame->data[2], v, numPixels/2);
+    //memset(mFrame->data[1], 127, numPixels / 2);
+    //memset(mFrame->data[2], 127, numPixels / 2); 
+
+    /*
+    int uvWidth = 640 / 2;
+    for(int i = 0; i < 480; i++)
+    {
+        for(int j = 0; j < uvWidth; j++)
+        {
+            mFrame->data[1][(i/2)*uvWidth + j] = u[i*uvWidth + j];
+            mFrame->data[2][(i/2)*uvWidth + j] = v[i*uvWidth + j];
+        }
+    }
+    */
     AVPacket packet;
     av_init_packet(&packet);
 
@@ -124,44 +150,24 @@ bool VideoEncoder::initEncoder()
 
     AVCodec *codec;
 
-    codec = avcodec_find_encoder(CODEC_ID_H264);
+    codec = avcodec_find_encoder(AV_CODEC_ID_H264);
     if(!codec)
     {
         std::cout << "CODEC_ID_H264 was't found!" << std::endl;
         return false;
     }
     mCtx = avcodec_alloc_context3(codec);
-
+    mCtx->codec_id = AV_CODEC_ID_H264;
     mCtx->width = 640;
     mCtx->height = 480;
-    mCtx->time_base.den = 25;
+    mCtx->time_base.den = 8;
     mCtx->time_base.num = 1;
-    mCtx->bit_rate = 500*1000;
-    mCtx->gop_size = 10;
-    mCtx->max_b_frames = 1;
-    mCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    mCtx->pix_fmt = AV_PIX_FMT_YUV422P;
     mCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    mCtx->profile = FF_PROFILE_H264_BASELINE;
+    mCtx->bit_rate = 640*480*4; // 1 bits per pixel
+    //av_opt_set(mCtx->priv_data, "profile", "baseline", 0);
     //av_opt_set(mCtx->priv_data, "preset", "slow", 0);
-    //mCtx->bit_rate_tolerance = 0;
-    //mCtx->rc_max_rate = 0;
-    //mCtx->rc_buffer_size = 0;
-    //mCtx->max_b_frames = 3;
-    //mCtx->b_frame_strategy = 1;
-    //mCtx->coder_type = 1;
-    //mCtx->me_cmp = 1;
-    //mCtx->me_range = 16;
-    //mCtx->qmin = 10;
-    //mCtx->qmax = 51;
-    //mCtx->scenechange_threshold = 40;
-    //mCtx->flags |= CODEC_FLAG_LOOP_FILTER;
-    //mCtx->me_method = ME_HEX;
-    //mCtx->me_subpel_quality = 5;
-    //mCtx->i_quant_factor = 0.71;
-    //mCtx->qcompress = 0.6;
-    //mCtx->max_qdiff = 4;
-    //mCtx->directpred = 1;
-    //mCtx->flags2 |= CODEC_FLAG2_FASTPSKIP;
+    av_opt_set(mCtx->priv_data, "tune", "zerolatency", 0);
 
     if(avcodec_open2(mCtx, codec, NULL) < 0)
     {
@@ -190,10 +196,10 @@ bool VideoEncoder::initEncoder()
     mFrame->linesize[0] = mCtx->width;
     mFrame->linesize[1] = mCtx->width / 2;
     mFrame->linesize[2] = mCtx->width / 2;
+    */
     mFrame->format = mCtx->pix_fmt;
     mFrame->width = mCtx->width;
     mFrame->height = mCtx->height;
-    */
 
     mEncoderInitialized = true;
     return true;

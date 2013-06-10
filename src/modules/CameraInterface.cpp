@@ -19,34 +19,37 @@ using namespace bsirang;
 
 /* CameraFrame definition */
 
-CameraFrame::CameraFrame(unsigned char *data, size_t size, uint32_t pixelFormat)
+CameraFrame::CameraFrame(uint8_t *data, size_t size, uint32_t pixelFormat)
 {
-    mData = (unsigned char *)malloc(size);
+    mData = (uint8_t *)malloc(size);
     if(mData)
     {
         mSize = size;
         mPixelFormat = pixelFormat;
-        assert(mPixelFormat == V4L2_PIX_FMT_YUYV); //currently only supporting YUYV
-        YUYVToPlanar(mData, data, size);
+        assert(mPixelFormat == V4L2_PIX_FMT_YUYV); //currently only supporting YUYV from camera
+        YUYVTo422P(mData, data, size);
     }else
     {
         mSize = 0;
     }
 }
 
-void CameraFrame::YUYVToPlanar(unsigned char *planar, unsigned char *yuyv, size_t size)
+void CameraFrame::YUYVTo422P(uint8_t *planar, uint8_t *yuyv, size_t size)
 {
-    //TODO fix this method and have it convert the YUYV 16bpp into YUV420P
+    size_t numPixels = size / 2;
     size_t yOffset = 0;
-    size_t uOffset = size / 2;
-    size_t vOffset = uOffset + (size / 4);
+    size_t vOffset = numPixels;
+    size_t uOffset = vOffset + (numPixels / 2);
+    uint8_t *y = (planar + yOffset);
+    uint8_t *u = (planar + uOffset);
+    uint8_t *v = (planar + vOffset);
     int count = 0;
-    for(int i = 0; i < size; i += 4)
+    for(int i = 0; i < size / 4; i++)
     {
-        planar[yOffset + count] = yuyv[i];
-        planar[uOffset + count/2] = yuyv[i+1];
-        planar[yOffset + count+1] = yuyv[i+2];
-        planar[vOffset + count/2] = yuyv[i+3];
+        y[count] =   yuyv[i*4+0];
+        u[count/2] = yuyv[i*4+1];
+        y[count+1] = yuyv[i*4+2];
+        v[count/2] = yuyv[i*4+3];
         count += 2;
     }
 }
@@ -250,8 +253,13 @@ void CameraInterface::readFrame()
     assert(buf.index < mBuffers.size());
 
     //std::cout << "New frame read and stored in buffer #" << buf.index << std::endl;
-    CameraFrame frame = CameraFrame((unsigned char *)mBuffers[buf.index].start, buf.bytesused, mPixelFormat);
-    mCsr->didReceiveFrame(frame);
+    CameraFrame frame = CameraFrame((uint8_t *)mBuffers[buf.index].start, buf.bytesused, mPixelFormat);
+
+    static uint32_t count = 0;
+    if(count++ % 10 == 0) //TODO implement cleaner solution (this is quick hack to reduce FPS)
+    {
+        mCsr->didReceiveFrame(frame);
+    }
 
     if(xioctl(VIDIOC_QBUF, &buf) == -1)
     {

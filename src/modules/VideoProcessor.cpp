@@ -1,4 +1,6 @@
 #include "VideoProcessor.hpp"
+#include <opencv/highgui.h>
+#include <opencv2/objdetect/objdetect.hpp>
 extern "C"
 {
 #include <libswscale/swscale.h>
@@ -7,8 +9,14 @@ using namespace bsirang;
 
 VideoProcessor::VideoProcessor()
 {
-    cvNamedWindow("videoDisplay", CV_WINDOW_AUTOSIZE); 
-    cvMoveWindow("videoDisplay", 100, 100);
+    mFaceCascadeXml = "objdetect/haarcascade_frontalface_alt.xml";
+    mEyesCascadeXml = "objdetect/haarcascade_eye_tree_eyeglasses.xml";
+
+    assert(mFaceCascade.load(mFaceCascadeXml));
+    assert(mEyesCascade.load(mEyesCascadeXml));
+    mWindowName = "Face Detection";
+    cvNamedWindow(mWindowName.c_str(), CV_WINDOW_AUTOSIZE); 
+    cvMoveWindow(mWindowName.c_str(), 100, 100);
     std::cout << "VideoProcessor created window" << std::endl;
 }
 
@@ -22,9 +30,45 @@ void VideoProcessor::didReceiveFrame(AVFrame *frame)
     std::cout << "\tKey Frame: " << frame->key_frame << std::endl;
     */
     IplImage *image = AVFrameToIplImage(frame);
-    cvShowImage("videoDisplay", image);
-    cvWaitKey(30);
+    //cvShowImage(mWindowName.c_str(), image);
+    detectAndDisplay(image);
+    int c = cvWaitKey(30);
     cvReleaseImage(&image);
+}
+
+void VideoProcessor::detectAndDisplay(cv::Mat frame)
+{
+    std::vector<cv::Rect> faces;
+    cv::Mat frame_gray;
+
+    cvtColor( frame, frame_gray, CV_BGR2GRAY );
+    equalizeHist( frame_gray, frame_gray );
+
+    //-- Detect faces
+    mFaceCascade.detectMultiScale( frame_gray, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+
+    for( int i = 0; i < faces.size(); i++ )
+    {
+        cv::Point center( faces[i].x + faces[i].width*0.5, faces[i].y + faces[i].height*0.5 );
+        ellipse( frame, center, cv::Size( faces[i].width*0.5, faces[i].height*0.5), 0, 0, 360, cv::Scalar( 255, 0, 255 ), 4, 8, 0 );
+
+        cv::Mat faceROI = frame_gray( faces[i] );
+        std::vector<cv::Rect> eyes;
+
+        //-- In each face, detect eyes
+        /*
+        mEyesCascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CV_HAAR_SCALE_IMAGE, cv::Size(30, 30) );
+
+        for( int j = 0; j < eyes.size(); j++ )
+        {
+            cv::Point center( faces[i].x + eyes[j].x + eyes[j].width*0.5, faces[i].y + eyes[j].y + eyes[j].height*0.5 );
+            int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
+            circle( frame, center, radius, cv::Scalar( 255, 0, 0 ), 4, 8, 0 );
+        }
+        */
+    }
+    //-- Show what you got
+    imshow( mWindowName, frame );
 }
 
 IplImage *VideoProcessor::AVFrameToIplImage(AVFrame *frame)

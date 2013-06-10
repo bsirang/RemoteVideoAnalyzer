@@ -3,7 +3,7 @@
 #include <cassert>
 #include "UdpNetwork.hpp"
 
-#define MAX_BUF 2048
+#define MAX_BUF 0xFFFF
 
 using namespace bsirang;
 
@@ -58,6 +58,11 @@ void UdpNetwork::initializeClient(std::string &remoteAddress, uint16_t remotePor
 
 void UdpNetwork::sendData(std::vector<uint8_t> &data)
 {
+    if(data.size() > MAX_BUF)
+    {
+        std::cout << "Attempting to send too large of a message " << data.size() << " > " << MAX_BUF << std::endl;
+        return;
+    }
     int status = sendto(mSock, &data[0], data.size(), 0,
       (struct sockaddr*)&mServerAddr, sizeof(mClientAddr));
     if(status < 0)
@@ -81,7 +86,7 @@ std::vector<uint8_t> UdpNetwork::waitForData()
         std::cout << "Received " << numReceived << " bytes." << std::endl;
         if(numReceived)
         {
-            assert(numReceived <= MAX_BUF); //make sure we have a proper value for MAX_BUF
+            assert(numReceived <= MAX_BUF);
             return std::vector<uint8_t>(buf, buf+numReceived);
         }
     }else

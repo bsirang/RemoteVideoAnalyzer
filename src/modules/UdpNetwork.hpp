@@ -16,6 +16,7 @@
 
 namespace bsirang
 {
+    /*
     class NetworkInterface
     {
         public:
@@ -24,8 +25,15 @@ namespace bsirang
         virtual void sendData(std::vector<uint8_t> &data) = 0;
         virtual std::vector<uint8_t> waitForData() = 0;
     };
+    */
 
-    class UdpNetwork : public NetworkInterface, public EncodedStreamReceiver
+    /**
+     * Acts as both a UDP client and server. On the client side,
+     * takes encoded frames and sends them to the server. On the
+     * server side, blocks for incoming data and returns it to the
+     * caller.
+     */
+    class UdpNetwork : public EncodedStreamReceiver
     {
         public:
         UdpNetwork();

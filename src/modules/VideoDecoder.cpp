@@ -50,12 +50,12 @@ bool VideoDecoder::initDecoder()
     mCtx->height = 480;
     mCtx->time_base.den = 25;
     mCtx->time_base.num = 1;
-    mCtx->bit_rate = 500*1000;
-    mCtx->gop_size = 10;
-    mCtx->max_b_frames = 1;
-    mCtx->pix_fmt = AV_PIX_FMT_YUV420P;
+    mCtx->pix_fmt = AV_PIX_FMT_YUV422P;
     mCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    mCtx->profile = FF_PROFILE_H264_BASELINE;
+    //mCtx->profile = FF_PROFILE_H264_BASELINE;
+    //mCtx->bit_rate = 640*480*4;
+    //mCtx->gop_size = 10;
+    //mCtx->max_b_frames = 1;
 
     if(!mCtx)
     {

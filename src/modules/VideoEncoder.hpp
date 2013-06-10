@@ -13,8 +13,14 @@ extern "C"
 
 namespace bsirang
 {
-    //NOTE: This struct should be passed by reference to avoid deep copying of the object because it will result in
-    //double freeing in the deconstructor. Eventually smart pointers should be used.
+    /**
+     *
+     * Represents an encoded frame.
+     *
+     * NOTE: This struct should be passed by reference to avoid deep copying of the object because it will result in
+     * double freeing in the deconstructor. Eventually smart pointers should be used.
+     *
+     */
     struct EncodedFrame
     {
         EncodedFrame(uint8_t *data, size_t size, uint8_t *extraData, size_t extraDataSize);
@@ -29,11 +35,25 @@ namespace bsirang
         size_t mExtraDataSize;
 
     };
+
+    /**
+     * Describes an interface for receiving encoded camera frames.
+     */
     class EncodedStreamReceiver
     {
         public:
         virtual void didReceiveFrame(EncodedFrame frame) = 0;
     };
+
+    /**
+     * Receives raw camera images, encodes them, and sends them to the
+     * specified EncodedStreamReceiver.
+     *
+     * FFMpeg encoding/decoding reference: http://ffmpeg.org/doxygen/trunk/decoding__encoding_8c-source.html
+     *
+     * TODO Generalize. Currently video encoder, frame dimensions, and
+     * pixel formats are hardcoded.
+     */
     class VideoEncoder : public CameraStreamReceiver
     {
         public:

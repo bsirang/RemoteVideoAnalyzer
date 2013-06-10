@@ -1,3 +1,8 @@
+/**
+ * Entry point for the server application. The server application listens for
+ * encoded frames over UDP, decodes them, processes them, and displays them.
+ */
+
 #include <iostream>
 #include "modules/UdpNetwork.hpp"
 #include "modules/VideoEncoder.hpp"
